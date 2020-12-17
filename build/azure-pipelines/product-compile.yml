@@ -7,28 +7,29 @@ steps:
     inputs:
       versionSpec: "1.x"
 
-  - task: AzureKeyVault@1
-    displayName: "Azure Key Vault: Get Secrets"
-    inputs:
-      azureSubscription: "vscode-builds-subscription"
-      KeyVaultName: vscode
+  - ${{ if eq(parameters.pr, false) }}:
+    - task: AzureKeyVault@1
+      displayName: "Azure Key Vault: Get Secrets"
+      inputs:
+        azureSubscription: "vscode-builds-subscription"
+        KeyVaultName: vscode
 
-  - script: |
-      set -e
-      cat << EOF > ~/.netrc
-      machine github.com
-      login vscode
-      password $(github-distro-mixin-password)
-      EOF
+    - script: |
+        set -e
+        cat << EOF > ~/.netrc
+        machine github.com
+        login vscode
+        password $(github-distro-mixin-password)
+        EOF
 
-      git config user.email "vscode@microsoft.com"
-      git config user.name "VSCode"
-    displayName: Prepare tooling
+        git config user.email "vscode@microsoft.com"
+        git config user.name "VSCode"
+      displayName: Prepare tooling
 
-  - script: |
-      set -e
-      git pull --no-rebase https://github.com/$(VSCODE_MIXIN_REPO).git $(node -p "require('./package.json').distro")
-    displayName: Merge distro
+    - script: |
+        set -e
+        git pull --no-rebase https://github.com/$(VSCODE_MIXIN_REPO).git $(node -p "require('./package.json').distro")
+      displayName: Merge distro
 
   - script: |
       npx https://aka.ms/enablesecurefeed standAlone
@@ -84,11 +85,12 @@ steps:
       vstsFeed: "npm-vscode"
     condition: and(succeeded(), ne(variables['CacheRestored'], 'true'))
 
-  # Mixin must run before optimize, because the CSS loader will inline small SVGs
-  - script: |
-      set -e
-      node build/azure-pipelines/mixin
-    displayName: Mix in quality
+  - ${{ if eq(parameters.pr, false) }}:
+    # Mixin must run before optimize, because the CSS loader will inline small SVGs
+    - script: |
+        set -e
+        node build/azure-pipelines/mixin
+      displayName: Mix in quality
 
   - script: |
       set -e
@@ -99,20 +101,22 @@ steps:
       yarn gulp minify-vscode-reh-web
     displayName: Compile
 
-  - script: |
-      set -e
-      AZURE_STORAGE_ACCESS_KEY="$(ticino-storage-key)" \
-        node build/azure-pipelines/upload-sourcemaps
-    displayName: Upload sourcemaps
-    condition: and(succeeded(), ne(variables['VSCODE_PUBLISH'], 'false'))
 
-  - script: |
-      set -e
-      VERSION=`node -p "require(\"./package.json\").version"`
-      AZURE_DOCUMENTDB_MASTERKEY="$(builds-docdb-key-readwrite)" \
-        node build/azure-pipelines/common/createBuild.js $VERSION
-    displayName: Create build
-    condition: and(succeeded(), ne(variables['VSCODE_PUBLISH'], 'false'))
+  - ${{ if eq(parameters.pr, false) }}:
+    - script: |
+        set -e
+        AZURE_STORAGE_ACCESS_KEY="$(ticino-storage-key)" \
+          node build/azure-pipelines/upload-sourcemaps
+      displayName: Upload sourcemaps
+      condition: and(succeeded(), ne(variables['VSCODE_PUBLISH'], 'false'))
+
+    - script: |
+        set -e
+        VERSION=`node -p "require(\"./package.json\").version"`
+        AZURE_DOCUMENTDB_MASTERKEY="$(builds-docdb-key-readwrite)" \
+          node build/azure-pipelines/common/createBuild.js $VERSION
+      displayName: Create build
+      condition: and(succeeded(), ne(variables['VSCODE_PUBLISH'], 'false'))
 
   # we gotta tarball everything in order to preserve file permissions
   - script: |
