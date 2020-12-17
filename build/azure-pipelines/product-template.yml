@@ -53,7 +53,7 @@ stages:
         steps:
           - template: win32/product-build-win32.yml
 
-      ${{ if eq(parameters.pr, false) }}:
+      - ${{ if eq(parameters.pr, false) }}:
         - job: Windows32
           condition: and(succeeded(), eq(variables['VSCODE_BUILD_WIN32_32BIT'], 'true'), ne(variables['VSCODE_PUBLISH'], 'false'))
           timeoutInMinutes: 90
@@ -86,7 +86,7 @@ stages:
         steps:
           - template: linux/product-build-linux.yml
 
-      ${{ if eq(parameters.pr, false) }}:
+      - ${{ if eq(parameters.pr, false) }}:
         - job: LinuxSnap
           dependsOn:
             - Linux
@@ -162,7 +162,7 @@ stages:
         steps:
           - template: darwin/product-build-darwin.yml
 
-      ${{ if eq(parameters.pr, false) }}:
+      - ${{ if eq(parameters.pr, false) }}:
         - job: macOSARM64
           condition: and(succeeded(), eq(variables['VSCODE_BUILD_MACOS_ARM64'], 'true'), ne(variables['VSCODE_PUBLISH'], 'false'))
           timeoutInMinutes: 90
