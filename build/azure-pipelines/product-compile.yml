@@ -97,12 +97,15 @@ steps:
       yarn gulp compile-build
       yarn gulp compile-extensions-build
       yarn gulp minify-vscode
-      yarn gulp minify-vscode-reh
-      yarn gulp minify-vscode-reh-web
-    displayName: Compile
-
+    displayName: Compile Client
 
   - ${{ if eq(parameters.pr, false) }}:
+    - script: |
+        set -e
+        yarn gulp minify-vscode-reh
+        yarn gulp minify-vscode-reh-web
+      displayName: Compile Server
+
     - script: |
         set -e
         AZURE_STORAGE_ACCESS_KEY="$(ticino-storage-key)" \
