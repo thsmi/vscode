@@ -4,6 +4,6 @@ variables:
   VSCODE_PUBLISH: "false"
 
 extends:
-  template: product-template.yml
+  template: build/azure-pipelines/product-template.yml
   parameters:
     pr: true
